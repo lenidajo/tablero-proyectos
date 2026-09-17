@@ -336,6 +336,18 @@
     </div>
   </section>
 
+  <section class="card" id="monthlyCard" style="margin-bottom:20px;">
+    <div class="table-head" style="margin-bottom:14px;">
+      <h2>📅 Resumen mensual <span style="font-weight:400;color:var(--ink-soft);font-size:12.5px;">(por fecha de agregación)</span></h2>
+      <div class="filter-group slider-group">
+        <span class="filter-label">Año</span>
+        <input id="yearSlider" type="range" min="0" max="0" step="1" value="0">
+        <span id="yearSliderVal" class="slider-val">—</span>
+      </div>
+    </div>
+    <div id="monthBars"></div>
+  </section>
+
   <section class="card" id="riskCard" style="margin-bottom:20px;">
     <h2>🚩 Alertas de riesgo</h2>
     <div class="risk-grid" id="riskGrid"></div>
@@ -493,6 +505,52 @@ function render(){
     return f && (today-f)/DAY > 60 && d.pct < 1;
   });
   const urgSinAvance = DATA.filter(d=> d.tipo==='Urgente' && d.pct < 0.5);
+
+  // --- resumen mensual ---
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  function getRefDate(d){
+    return toDate(d.f_agg) || toDate(d.f_ini) || toDate(d.f_fin);
+  }
+  const yearsSet = new Set();
+  DATA.forEach(d=>{ const dt = getRefDate(d); if(dt) yearsSet.add(dt.getFullYear()); });
+  const years = [...yearsSet].sort((a,b)=>a-b);
+  const yearSlider = document.getElementById('yearSlider');
+  const yearSliderVal = document.getElementById('yearSliderVal');
+  const monthBarsEl = document.getElementById('monthBars');
+
+  function renderMonthly(){
+    const year = years[Number(yearSlider.value)];
+    yearSliderVal.textContent = year;
+    const months = Array.from({length:12}, ()=>({sum:0,n:0}));
+    DATA.forEach(d=>{
+      const dt = getRefDate(d);
+      if(dt && dt.getFullYear() === year){
+        months[dt.getMonth()].sum += d.pct;
+        months[dt.getMonth()].n += 1;
+      }
+    });
+    monthBarsEl.innerHTML = months.map((m,i)=>{
+      const avg = m.n ? m.sum/m.n : 0;
+      return `
+        <div class="bar-row">
+          <span class="dep-code">${MESES[i]}</span>
+          <span class="bar-track"><span class="bar-fill" style="width:${m.n ? Math.round(avg*100) : 0}%"></span></span>
+          <span class="n">${m.n ? Math.round(avg*100)+'% · '+m.n : '—'}</span>
+        </div>
+      `;
+    }).join('');
+  }
+
+  if(years.length){
+    yearSlider.min = 0;
+    yearSlider.max = years.length - 1;
+    yearSlider.value = years.length - 1;
+    yearSlider.addEventListener('input', renderMonthly);
+    renderMonthly();
+  } else {
+    yearSlider.disabled = true;
+    monthBarsEl.innerHTML = `<div class="risk-item"><span style="color:var(--ink-soft)">Sin fechas suficientes para el resumen mensual.</span></div>`;
+  }
 
   document.getElementById('riskGrid').innerHTML = `
     <div class="risk-box vencido"><div class="n">${vencidos.length}</div><div class="l">vencidos (fecha fin pasada, sin cerrar)</div></div>
