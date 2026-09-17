@@ -87,6 +87,10 @@
     align-items:center;
     gap:16px;
     border-bottom:3px solid var(--teal);
+    position:sticky;
+    top:0;
+    z-index:100;
+    box-shadow:0 4px 10px rgba(0,0,0,0.25);
   }
   .logo-badge{
     width:48px;height:48px;border-radius:50%;
@@ -242,7 +246,7 @@
     text-transform:uppercase;letter-spacing:0.04em;
     border-bottom:2px solid var(--line-strong);
     padding:0 10px 10px;
-    position:sticky;top:0;background:var(--panel);
+    position:sticky;top:var(--topbar-h, 80px);background:var(--panel);
   }
   tbody td{padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
   tbody tr:hover{background:var(--chip-bg);}
@@ -633,6 +637,13 @@ function render(){
   renderTable();
 }
 render();
+
+function syncTopbarHeight(){
+  const topbar = document.querySelector('.topbar');
+  document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
+}
+syncTopbarHeight();
+window.addEventListener('resize', syncTopbarHeight);
 </script>
 </body>
 </html>
